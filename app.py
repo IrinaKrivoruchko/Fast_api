@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from py_model import UserResponse, UserCreate, PostResponse, PostCreate
 from alchemy_models import User, Post, get_db
 from starlette.responses import JSONResponse
+from dummyjson_parser import parse
 
 
 # init fast api app
@@ -64,16 +65,20 @@ def test_json():
     return JSONResponse(data)
 
 
-def task():
-    for i in range(100):
-        print(i)
+# def task():
+#     for i in range(100):
+#         print(i)
+#
+#
+# @app.get("/task/")
+# def back_task(bgt: BackgroundTasks):
+#     bgt.add_task(task)
+#     return JSONResponse({"task": "Start"})
 
-
-@app.get("/task/")
-def back_task(bgt: BackgroundTasks):
-    bgt.add_task(task)
-    return JSONResponse({"task": "Start"})
-
+@app.post("/dummyparser")
+def dummy_parser(task: BackgroundTasks):
+    parse(task)
+    return JSONResponse({"task": "Start parse dummyjson"})
 
 if __name__ == "__main__":
     import uvicorn
