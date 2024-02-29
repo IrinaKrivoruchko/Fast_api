@@ -1,20 +1,22 @@
 from pydantic import BaseModel
 
 
-class UserCreate(BaseModel):
-    username: str
-    email: str
-    password: str
+class ProductCreate(BaseModel):
+    title: str
+    description: str
+    brand: str
+    price: int
+    category: str
 
 
-class UserResponse(UserCreate):
+class ProductResponse(ProductCreate):
     id: int
 
 
-class PostCreate(BaseModel):
+class CategoryCreate(BaseModel):
     title: str
-    content: str
 
 
-class PostResponse(PostCreate):
+
+class CategoryResponse(CategoryCreate):
     id: int

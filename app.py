@@ -1,12 +1,13 @@
+from typing import List
+
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from py_model import UserResponse, UserCreate, PostResponse, PostCreate
-from alchemy_models import User, Post, get_db
+from py_model import ProductCreate, ProductResponse, CategoryCreate, CategoryResponse
+from alchemy_models import Product, Category, get_db
 from starlette.responses import JSONResponse
-from dummyjson_parser import parse
-
+from dummyjson_parser import run_parse_tasks
 
 # init fast api app
 app = FastAPI()
@@ -18,66 +19,64 @@ app.add_middleware(CORSMiddleware,
                    allow_headers=["*"],
                    )
 
-
 # crud operation for User model
-@app.get("/users/{user_id}", response_model=UserResponse)
-def read_users(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+@app.get("/products/{product_id}", response_model=ProductResponse)
+def read_product_by_id(product_id: int, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
 
 
-@app.post("/users/", response_model=UserResponse)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = User(**user.model_dump())
-    db.add(db_user)
+@app.post("/product_create", response_model=ProductResponse)
+def create_product(product: ProductCreate, db: Session = Depends(get_db)):
+    test_val = product.model_dump()
+    db_product = Product(**test_val)
+    db.add(db_product)
     db.commit()
-    db.refresh(db_user)
-    return db_user
+    db.refresh(db_product)
+    return db_product
 
 
-# crud operation for Post model
-@app.get("/posts/{post_id}", response_model=PostResponse)
-def read_users(post_id: int, db: Session = Depends(get_db)):
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if post is None:
-        raise HTTPException(status_code=404, detail="Post not found")
-    return post
+@app.get("/products", response_model=List[ProductResponse])
+def read_products(db: Session = Depends(get_db)):
+    products = db.query(Product).all()
+    if products is None:
+        raise HTTPException(status_code=404, detail="not found")
+    return products
 
 
-@app.post("/posts/", response_model=PostResponse)
-def create_user(post: PostCreate, user_id: int, db: Session = Depends(get_db)):
-    db_post = Post(**post.model_dump(), user_id=user_id)
-    db.add(db_post)
+@app.post("/category_create/", response_model=CategoryResponse)
+def create_category(post: CategoryCreate, db: Session = Depends(get_db)):
+    db_category = Category(**post.model_dump())
+    db.add(db_category)
     db.commit()
-    db.refresh(db_post)
-    return db_post
+    db.refresh(db_category)
+    return db_category
 
+@app.put("/products/{product_id}", response_model=ProductResponse)
+def update_product(product_id: int, product: ProductCreate, db: Session = Depends(get_db)):
+    db_product = db.query(Product).filter(Product.id == product_id).first()
+    if db_product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    for attr, value in product.dict().items():
+        setattr(db_product, attr, value)
+    db.commit()
+    db.refresh(db_product)
+    return db_product
 
-@app.get("/")
-def test_json():
-    data = {
-        "user_id": 1,
-        "user": "Toha",
-        "email": "mak.anton87@gmail.com"
-    }
-    return JSONResponse(data)
+@app.delete("/products/{product_id}")
+def delete_product(product_id: int, db: Session = Depends(get_db)):
+    db_product = db.query(Product).filter(Product.id == product_id).first()
+    if db_product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    db.delete(db_product)
+    db.commit()
+    return "ok"
 
-
-# def task():
-#     for i in range(100):
-#         print(i)
-#
-#
-# @app.get("/task/")
-# def back_task(bgt: BackgroundTasks):
-#     bgt.add_task(task)
-#     return JSONResponse({"task": "Start"})
-
-@app.post("/dummyparser")
-def dummy_parser(task: BackgroundTasks):
-    parse(task)
+@app.post("/dummysaver")
+def dummy_parser(task: BackgroundTasks, db: Session = Depends(get_db)):
+    run_parse_tasks(task, db)
     return JSONResponse({"task": "Start parse dummyjson"})
 
 if __name__ == "__main__":
